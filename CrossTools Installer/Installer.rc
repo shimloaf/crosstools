@@ -1,0 +1,13 @@
+// Installer.rc
+// Embeds the pre-compiled CrossTools executable and uninstaller as resources.
+//
+//   1               - Installer window icon (CrossTools.ico)
+//   IDR_APP_EXE 101 - CrossTools.exe
+//   IDR_UNINST  102 - Uninstall CrossTools.exe
+
+#include <windows.h>
+
+1 ICON "CrossTools.ico"
+
+101 RCDATA "CrossTools.exe"
+102 RCDATA "Uninstall CrossTools.exe"

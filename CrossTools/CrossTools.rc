@@ -1,0 +1,36 @@
+#include <windows.h>
+
+#define IDI_APP 1
+
+IDI_APP ICON "CrossTools.ico"
+
+// Version shown on the exe's Properties > Details page. Change these two lines for a new version.
+#define VER_NUMBER 1,2,0,0
+#define VER_TEXT   "1.2.0.0"
+
+1 VERSIONINFO
+ FILEVERSION VER_NUMBER
+ PRODUCTVERSION VER_NUMBER
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "FileDescription", "CrossTools - crossword helper"
+            VALUE "FileVersion", VER_TEXT
+            VALUE "InternalName", "CrossTools"
+            VALUE "OriginalFilename", "CrossTools.exe"
+            VALUE "ProductName", "CrossTools"
+            VALUE "ProductVersion", VER_TEXT
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

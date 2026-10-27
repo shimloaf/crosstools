@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CrossTools</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#3a6ea5;font:13px Tahoma,"MS Sans Serif",Arial,sans-serif;color:#000}
+#win{max-width:560px;margin:14px auto;background:#d4d0c8;border:2px outset #fff;padding:3px}
+#ttl{background:#000080;color:#fff;font-weight:bold;padding:3px 6px}
+#in{padding:8px}
+.m{font-family:Consolas,"Lucida Console","Courier New",monospace}
+input[type=text],input[type=number],textarea{border:2px inset #fff;background:#fff;padding:2px 4px;font:16px Consolas,"Lucida Console",monospace}
+button{font:inherit;padding:3px 10px;background:#d4d0c8;border:2px outset #fff;cursor:pointer}
+button:active{border-style:inset}
+#w{width:100%;font-size:24px}
+#tabs{display:flex;margin-top:8px;padding-left:2px}
+.tab{margin-bottom:-2px;margin-right:-1px;position:relative;z-index:1;border-bottom-width:0}
+.tab.on{z-index:3;padding-top:5px;padding-bottom:5px;border-bottom:2px solid #d4d0c8}
+.page{display:none;border:2px outset #fff;padding:10px;min-height:380px;position:relative;z-index:2}
+.page.on{display:block}
+label{display:block;margin:6px 0 2px}
+label.c{display:flex;gap:6px;align-items:center;margin:3px 0}
+#cnt{font:bold 96px/1.1 Consolas,"Lucida Console",monospace;color:#0046c8;text-align:center}
+#note{color:#0046c8;text-align:center}
+#res{text-align:center;min-height:44px;font-size:16px;margin-top:14px}
+#sbar{display:none;justify-content:center;align-items:center;gap:6px;margin-top:6px}
+#sc{width:70px}
+#fst{height:20px}
+#list{display:grid;border:2px inset #fff;background:#fff;max-height:340px;overflow:auto;font-size:24px}
+#list div{padding:0 4px}
+#list .hit{background:#c6efce;color:#006100}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row input[type=number]{width:70px}
+#dl{border:2px inset #fff;background:#fff;height:140px;overflow:auto;margin:6px 0}
+#dl table{width:100%;border-collapse:collapse}
+#dl th{background:#d4d0c8;text-align:left;border:1px outset #fff;position:sticky;top:0;padding:1px 6px;font-weight:normal}
+#dl td{padding:1px 6px}
+#log{width:100%;height:56px;font-size:13px}
+#ign{width:100%;height:54px;background:#d4d0c8;font-size:13px}
+.gray{color:#666;font-size:12px}
+</style></head><body>
+<div id="win"><div id="ttl">CrossTools</div><div id="in">
+<input id="w" type="text" class="m" maxlength="40" autocomplete="off" spellcheck="false" autofocus>
+<div id="tabs"></div>
+
+<div class="page on" id="p0">
+ <div id="cnt">0</div><div id="note">letters</div><div id="res" class="m"></div>
+ <div id="sbar"><span>Score:</span><input id="sc" type="number" min="0" max="999999"><button id="act" style="width:200px"></button></div>
+</div>
+
+<div class="page" id="p1"><div id="fst"></div><div id="list" class="m"></div></div>
+
+<div class="page" id="p2">
+ <div class="row">Old max: <input id="om" type="number" value="100"> New max: <input id="nm" type="number" value="50"> Round to: <input id="rt" type="number" value="5"></div>
+ <div class="row" style="margin-top:6px">Clamp max: <input id="cm" type="number" value="50"></div>
+ <div id="pv" style="margin:8px 0"></div>
+ <div id="dl"></div>
+ <div class="row"><button id="resc">Rescale checked dictionaries</button><button id="clamp">Clamp checked dictionaries</button></div>
+ <textarea id="log" readonly></textarea>
+ <div class="gray">Changed files are downloaded (a web page can't overwrite your copy). Your original file stays as it was.</div>
+</div>
+
+<div class="page" id="p3">
+ <label>Blank characters (always count as letters; mark the gap on the Fill tab):</label>
+ <input id="blanks" type="text" value="_" maxlength="10" style="width:160px">
+ <label>Ignored characters (not counted) - tick the groups to ignore:</label>
+ <label class="c"><input type="checkbox" id="ws" class="cf" checked>Whitespace (spaces, tabs)</label>
+ <label class="c"><input type="checkbox" id="nums" class="cf">Numbers (0-9)</label>
+ <label class="c"><input type="checkbox" id="pun" class="cf" checked>Punctuation</label>
+ <label class="c"><input type="checkbox" id="spc" class="cf" checked>Special characters</label>
+ <textarea id="ign" readonly class="m"></textarea>
+ <div class="gray">Blank characters always count, even if their group is ignored.</div>
+ <label>Dictionaries (.dict files, one "entry;score" per line):</label>
+ <div class="row"><input type="file" id="files" multiple accept=".dict,.txt"></div>
+ <div id="dst" class="gray" style="margin:4px 0">No dictionaries loaded</div>
+ <label>Default dictionary for added words, and the default score:</label>
+ <div class="row"><input id="adddict" type="text" value="CrossTools.dict" style="width:230px"><input id="addsc" type="number" value="50" style="width:70px"><button id="dlnew">Download</button></div>
+ <label class="c" style="margin-top:10px"><input type="checkbox" id="showsc">Show a found word's score, and let me change it</label>
+ <div class="gray">Added words and score changes live in this page only. Use Download to keep them.</div>
+</div>
+</div></div>
+
+<script>
+const $=i=>document.getElementById(i);
+const G={ws:' \t\u00A0\u3000',nums:'0123456789',pun:'.,;:!?\'"-()[]{}/\u201C\u201D\u2018\u2019\u2013\u2014\u2026',spc:'@#$%^&*+=<>|~\\_`'};
+const up=c=>{const u=c.toUpperCase();return u.length===c.length?u:c};
+let dicts=[],mode=0,boxKey='',foundKey='',tab=0,pend=0;
+
+// ---- rules (same as the Windows app) ----
+function cfg(){const b=[...$('blanks').value].map(up),ig=new Set();
+ for(const k in G)if($(k).checked)for(const c of G[k])ig.add(c);
+ b.forEach(c=>ig.delete(c));return{b,ig}}
+function norm(s,C){let k='';for(const ch of s){const c=up(ch);if(!C.ig.has(c))k+=c}return k}
+const ps=s=>{s=s.replace(/^[ \t]+|[ \t]+$/g,'');return/^\d{1,9}$/.test(s)?+s:-1};
+const SC=/^([ \t]*)(\d{1,9})([ \t]*)$/;
+function dname(){let s=$('adddict').value.trim().split(/[\\/]/).pop().replace(/\.dict$/i,'');return(s||'CrossTools')+'.dict'}
+
+// ---- dictionaries: Map of normalized entry -> highest score ----
+function index(d,C){d.map=new Map();d.top=0;
+ for(const raw of d.text.split('\n')){const l=raw.endsWith('\r')?raw.slice(0,-1):raw;if(!l)continue;
+  const i=l.lastIndexOf(';'),k=norm(i<0?l:l.slice(0,i),C),s=i<0?-1:ps(l.slice(i+1));
+  if(!k)continue;if(!d.map.has(k)||s>d.map.get(k))d.map.set(k,s);if(s>d.top)d.top=s}}
+function reindex(){const C=cfg();dicts.forEach(d=>index(d,C));dicts.sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'}));
+ const n=dicts.reduce((a,d)=>a+d.map.size,0);
+ $('dst').textContent=dicts.length?`Loaded ${dicts.length} ${dicts.length==1?'dictionary':'dictionaries'} (${n} entries)`:'No dictionaries loaded';
+ renderDicts();update()}
+function mapLines(text,fn){return text.split('\n').map(raw=>{const cr=raw.endsWith('\r'),l=cr?raw.slice(0,-1):raw,r=fn(l,l.lastIndexOf(';'));return r==null?raw:r+(cr?'\r':'')}).join('\n')}
+function setScore(text,key,sc,C){let n=0;
+ const out=mapLines(text,(l,i)=>{if(i<0||norm(l.slice(0,i),C)!==key)return null;const m=l.slice(i+1).match(SC);
+  if(!m||+m[2]===sc)return null;n++;return l.slice(0,i+1)+m[1]+sc+m[3]});return[out,n]}
+function convert(text,op){let n=0;
+ const out=mapLines(text,(l,i)=>{if(i<0)return null;const m=l.slice(i+1).match(SC);if(!m)return null;
+  const v=+m[2],nv=op.clamp?Math.min(v,op.max):resc(v,op.src,op.dst,op.step);
+  if(op.clamp&&nv===v)return null;n++;return l.slice(0,i+1)+m[1]+nv+m[3]});return[out,n]}
+const resc=(v,s,d,st)=>Math.floor((2*v*d+s*st)/(2*s*st))*st;
+function dl(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+// ---- main update ----
+function update(){
+ const C=cfg(),ch=[...$('w').value];let blank=-1,blanks=0,cnt=0,key='';
+ ch.forEach((c,i)=>{if(C.b.includes(c)){if(blanks++===0)blank=i;cnt++;key+=c}else if(!C.ig.has(c)){cnt++;key+=c}});
+ $('cnt').textContent=cnt;$('note').textContent=cnt===1?'letter':'letters';
+ const show=$('showsc').checked;let res='',col='#808080',add=false,m=0,bk='',bt='';
+ if(key){
+  if(!dicts.length){res='No dictionaries loaded (see Config)';add=blanks===0}
+  else{const hit=[];let best=-1;
+   for(const d of dicts)if(d.map.has(key)){const s=d.map.get(key);hit.push(d.name+(show&&s>=0?' ('+s+')':''));best=Math.max(best,s)}
+   if(!hit.length){res='Word not found in dictionary';col='#c80000';add=blanks===0}
+   else{res='Found in dictionary: '+hit.join(', ');col='#008000';
+    if(show){m=2;foundKey=key;bk='F'+key+'|'+res;bt=best>=0?best:''}}}}
+ if(add){m=1;bk='A';bt=$('addsc').value}
+ mode=m;if(!m)boxKey='';else if(bk!==boxKey){$('sc').value=bt;boxKey=bk}
+ $('res').textContent=res;$('res').style.color=col;
+ $('act').textContent=m===2?'Update score':'Add to '+dname().replace(/\.dict$/,'');
+ $('sbar').style.display=m&&tab===0?'flex':'none';
+ // Fill the blank
+ const L=$('list');L.innerHTML='';
+ if(blanks!==1){$('fst').textContent=blanks>1?'Use just one blank':!C.b.length?'No blank characters set (see Config)':'Type a word with '+C.b[0]+' for the blank, e.g. C'+C.b[0]+'T';return}
+ L.style.gridTemplateColumns=`repeat(auto-fill,minmax(${ch.length+3}ch,1fr))`;
+ let hits=0;const f=document.createDocumentFragment();
+ for(let i=0;i<26;i++){ch[blank]=String.fromCharCode(65+i);const s=ch.join(''),k=norm(s,C),hit=dicts.some(d=>d.map.has(k));
+  hits+=hit;const e=document.createElement('div');e.textContent=s;if(hit)e.className='hit';f.appendChild(e)}
+ L.appendChild(f);
+ $('fst').textContent='26 possibilities'+(dicts.length?(hits?', '+hits+' in a dictionary (highlighted)':', none in a dictionary'):'');
+}
+function addWord(){const e=$('w').value.trim();if(!e)return;const nm=dname().replace(/\.dict$/,'');
+ let d=dicts.find(x=>x.name===nm);if(!d){d={name:nm,text:''};dicts.push(d)}
+ let s=parseInt($('sc').value,10);if(isNaN(s))s=50;
+ d.text+=(d.text&&!d.text.endsWith('\n')?'\n':'')+e+';'+s+'\n';reindex()}
+function changeScore(){const s=parseInt($('sc').value,10);if(isNaN(s)||!foundKey)return;
+ const C=cfg();let total=0;
+ for(const d of dicts)if(d.map.has(foundKey)){const[out,n]=setScore(d.text,foundKey,s,C);if(n){d.text=out;total+=n}}
+ if(!total)alert('Nothing to change: the score is already that, or the entry has no whole-number score.');
+ reindex()}
+
+// ---- Score edit ----
+function renderDicts(){const t=document.createElement('table');
+ t.innerHTML='<tr><th></th><th>Dictionary</th><th>Entries</th><th>Top score</th></tr>';
+ for(const d of dicts){const r=t.insertRow(),c=r.insertCell();c.innerHTML='<input type="checkbox">';c.firstChild.dataset.n=d.name;
+  r.insertCell().textContent=d.name;r.insertCell().textContent=d.map.size;r.insertCell().textContent=d.top}
+ $('dl').replaceChildren(t)}
+const num=i=>parseInt($(i).value,10)||0;
+function preview(){const s=num('om'),d=num('nm'),st=num('rt');
+ if(s<=0||d<=0||st<=0){$('pv').textContent='Enter whole numbers above 0.';return}
+ $('pv').textContent='Rescale preview (old -> new):  '+[100,75,50,25].map(p=>{const v=Math.floor(s*p/100);return v+' -> '+resc(v,s,d,st)}).join(',  ')}
+function apply(clamp){
+ const op={clamp,src:num('om'),dst:num('nm'),step:num('rt'),max:num('cm')};
+ if(clamp?op.max<=0:(op.src<=0||op.dst<=0||op.step<=0)){$('log').value=clamp?'Enter a clamp max above 0.':'Enter whole numbers above 0 for old max, new max and rounding.';return}
+ const sel=[...$('dl').querySelectorAll('input:checked')].map(c=>c.dataset.n);
+ if(!sel.length){$('log').value='Tick at least one dictionary first.';return}
+ if(!confirm(clamp?`Clamp every score above ${op.max} down to ${op.max} in ${sel.length} dictionary(ies)?`
+  :`Rescale the scores in ${sel.length} dictionary(ies) from a max of ${op.src} to a max of ${op.dst}, rounded to the nearest ${op.step}?`))return;
+ const log=[];
+ for(const n of sel){const d=dicts.find(x=>x.name===n),[out,c]=convert(d.text,op);
+  if(!c){log.push(n+': '+(clamp?'no scores above the clamp, file left alone':'no scores found, file left alone'));continue}
+  d.text=out;dl(n+'.dict',out);log.push(`${n}: ${c} scores ${clamp?'clamped to '+op.max:'changed'}. Downloaded ${n}.dict`)}
+ $('log').value=log.join('\n');reindex()}
+
+// ---- wiring ----
+['Letter count','Fill the blank','Score edit','Config'].forEach((n,i)=>{const b=document.createElement('button');
+ b.textContent=n;b.className='tab'+(i?'':' on');b.onclick=()=>{tab=i;document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',j===i));
+  document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('on',j===i));update();$('w').focus()};$('tabs').appendChild(b)});
+$('w').oninput=e=>{const t=e.target,p=t.selectionStart;t.value=[...t.value].map(up).join('');t.setSelectionRange(p,p);update()};
+$('blanks').oninput=()=>{clearTimeout(pend);pend=setTimeout(reindex,300);update()};
+document.querySelectorAll('.cf').forEach(c=>c.onchange=()=>{refreshIgn();reindex()});
+$('showsc').onchange=update;$('adddict').oninput=update;$('addsc').oninput=update;
+$('act').onclick=()=>{mode===2?changeScore():addWord();$('w').focus()};
+$('files').onchange=async e=>{for(const f of e.target.files){const name=f.name.replace(/\.(dict|txt)$/i,''),text=await f.text(),d={name,text},i=dicts.findIndex(x=>x.name===name);
+  if(i<0)dicts.push(d);else dicts[i]=d}e.target.value='';reindex()};
+$('dlnew').onclick=()=>{const nm=dname().replace(/\.dict$/,''),d=dicts.find(x=>x.name===nm);d?dl(dname(),d.text):alert('Nothing to download yet: no words have been added to '+dname()+'.')};
+['om','nm','rt'].forEach(i=>$(i).oninput=preview);
+$('resc').onclick=()=>apply(false);$('clamp').onclick=()=>apply(true);
+function refreshIgn(){const p=[];if($('ws').checked)p.push('[space] [tab]');for(const k of['nums','pun','spc'])if($(k).checked)p.push(G[k]);
+ $('ign').value=p.length?p.join('   '):'(nothing is ignored)'}
+refreshIgn();preview();update();
+</script></body></html>

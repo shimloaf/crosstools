@@ -1,0 +1,6 @@
+/dictionaries
+*.res
+*.log
+*.obj
+*.exe
+*.dll
